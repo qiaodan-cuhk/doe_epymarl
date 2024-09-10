@@ -17,3 +17,6 @@ REGISTRY["maddpg_learner"] = MADDPGLearner
 REGISTRY["ppo_learner"] = PPOLearner
 REGISTRY["pac_learner"] = PACActorCriticLearner
 REGISTRY["pac_dcg_learner"] = PACDCGLearner
+
+from .doe_a2c_learner import DoE_A2C_Learner
+REGISTRY["doe_ia2c_learner"] = DoE_A2C_Learner

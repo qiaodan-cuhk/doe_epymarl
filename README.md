@@ -1,3 +1,57 @@
+# LLM Subtask for GRF based on EPyMARL
+
+This implementation aims for adapt MODoE into Google Research Football Environments and EPyMARL framework.
+
+## Adopting MEDoE to Epymarl & GRF
+
+Change Log
+- Seperate fst/runner agents into learner and agents. 
+- Add doe_a2c_learner in src/learners (agent.update), adopt doe coefficients as actor loss
+- Add doe_classifier & LLM_doe in src/modules/doe
+- Add doe_controller in src/controllers/mac, adopt doe coefficients as sample temperature
+- Add gfootball in src/envs
+- Add doe_ia2c.yaml in config/alg
+- Zoo Agents are removed, doe_classifier experience are saved manually, code is in run.py/242-249, buffer will be saved in results/models/envs/map_name/buffer.pt
+- MEDoE contains 2-stage training, first on sourse task, then on target task, the pretrained zoo agents are saved in [Edingburgh DataShare](https://datashare.ed.ac.uk/handle/10283/8778). Here we implemented this by learning from scratch & save models/experience in .py file, then load them in the medoe.py training.
+- 移除 ids 姓名列表，在epymarl框架中不需要，改为用 [0 1 2 3] 表示4个agent
+- 添加判断是source task预训练和target task DoE的参数，在yaml.args中，对应的是 args.use_doe = True
+- 在 run.py 中，添加 args.if_doe 参数，在训练时，如果为True，则加载buffer并训练一个classifier，否则不加载
+- 修改 doe_controller.py 和 doe_a2c_learner.py 中关于is_doe_classifier的代码，增加set_doe_classifier方法直接加载 self.doe_classifier = doe_classifier_config_loader(n_agents, cfg)，避免重复训练
+- 移除 mlp_class.py 中 from zoo 的代码，omegaconf 的buffer加载方式，以及 agent_id_to_label 替换为role_list一个列表表示每个agent的角色“attack-defend”
+
+ToDo
+- GRF 数据结构需要测试
+- buffer存储的数据结构需要测试，并与doe classifier对齐
+- 先在SMAC测试epymarl的 source 和 target 训练
+
+代码结构
+- run.py 是整个训练流程
+- mlp_class.py 是分类器，加载buffer数据和角色配置，训练一个 obs-> 是否属于自己角色的分类器
+- doe_controller.py 是控制器 actor，初始化is_doe时加载分类器，并训练分类器，使用分类器结果来控制动作的采样温度
+- doe_a2c_learner.py 是学习器，初始化is_doe时加载分类器，在训练中使用分类器结果作为 lr 和 entropy 的增益系数，调节critic loss
+- 在mlp_class中，如果 train_dataloader 不为空，则使用 buffer 数据训练分类器，否则不训练 mlps
+
+
+Notice:
+- Epymarl has been updated to [Gymnasium](https://github.com/uoe-agents/epymarl) version in June 2024. For simplicity, we adopt old version Epymarl with Gym suits.
+- Some tricks dependencies for Epymarl: gym==0.21.0 & setuptools==65.5.0
+- GRF installation is tricky, try following codes, see [GRF](https://github.com/google-research/football) and [MARLlib_Env](https://marllib.readthedocs.io/en/latest/handbook/env.html#google-research-football)
+
+
+```
+sudo apt-get install git cmake build-essential libgl1-mesa-dev libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libsdl2-gfx-dev libboost-all-dev libdirectfb-dev libst-dev mesa-utils xvfb x11vnc python3-pip 
+python3 -m pip install --upgrade pip setuptools psutil wheel
+```
+
+- (Tmp) For Chinese reader, here is a quickstart for Epymarl structures. [mathpretty](https://mathpretty.com/16924.html)
+
+Environment: 
+We use the "3253d09" commit of Epymarl, which is the latest version of Epymarl before Gymnasium update. The epymarl code given in MEDoE with QMIX-vmas has been modified in the part of runners, it will get errors about self.n_agents not defined.
+
+conda python 3.8
+cuda 11.8
+pytorch 1.13.0 cuda=11.7
+
 # Extended Python MARL framework - EPyMARL
 
 EPyMARL is  an extension of [PyMARL](https://github.com/oxwhirl/pymarl), and includes

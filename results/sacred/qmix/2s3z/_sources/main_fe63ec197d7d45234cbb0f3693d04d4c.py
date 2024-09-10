@@ -83,7 +83,7 @@ def config_copy(config):
 
 if __name__ == "__main__":
     params = deepcopy(sys.argv)
-    th.set_num_threads(6)
+    th.set_num_threads(1)
 
     # Get the defaults from default.yaml
     with open(

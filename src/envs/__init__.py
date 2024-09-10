@@ -30,3 +30,20 @@ if sys.platform == "linux":
     )
 
 REGISTRY["gymma"] = gymma_fn
+
+
+# Add GRF API
+from functools import partial
+def env_fn(env, **kwargs) -> MultiAgentEnv:
+    return env(**kwargs)
+
+try:
+    gfootball = True
+    from .gfootball import GoogleFootballEnv
+except Exception as e:
+    gfootball = False
+    print(e)
+
+if gfootball:
+    REGISTRY["gfootball"] = partial(env_fn, env=GoogleFootballEnv)
+
