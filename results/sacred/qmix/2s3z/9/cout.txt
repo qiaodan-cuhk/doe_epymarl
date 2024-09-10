@@ -171,3 +171,13 @@ Next launch phase started: 5
 Next launch phase started: 6
 Next launch phase started: 7
 Next launch phase started: 8
+Game has started.
+Using default stable ids, none found at: /home/qiaodan/StarCraftII/stableid.json
+Successfully loaded stable ids: GameData\stableid.json
+Sending ResponseJoinGame
+[INFO 01:25:45] my_main Recent Stats | t_env:      50059 | Episode:     1028
+battle_won_mean:           0.0037	dead_allies_mean:          4.9888	dead_enemies_mean:         0.5731	ep_length_mean:           49.7501
+epsilon:                   0.2372	grad_norm:                 5.0179	loss:                      0.9982	q_taken_mean:              0.4317
+return_mean:               6.2739	return_std:                1.1859	target_mean:               0.4528	td_error_abs:              0.6980
+test_battle_won_mean:      0.1800	test_dead_allies_mean:     3.8550	test_dead_enemies_mean:    1.8500	test_ep_length_mean:      84.6150
+test_return_mean:          7.9079	test_return_std:           2.9878	
