@@ -10,7 +10,7 @@ REGISTRY["llm_mlp"] = LLMlassifier
 
 
 def doe_classifier_config_loader(n_agents, cfg):
-    type = cfg.doe_type
+    type = cfg.get('doe_type', 'mlp')
     cls = REGISTRY[type]
     if not hasattr(cls, "from_config"):
         raise NotImplementedError(f"There is no from_config method defined for {type}")

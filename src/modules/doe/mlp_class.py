@@ -124,19 +124,19 @@ class MLPClassifier:
     
     @classmethod
     def from_config(cls, n_agents, cfg):
-        if cfg.load_mode == "train":
+        if cfg.get("load_mode") == "train":
             classifier = cls.from_config_train(n_agents, cfg)
             if cfg.get("save_classifier", False):
                 classifier.save(cfg.save_pathname)
             return classifier
-        elif cfg.load_mode == "load":
+        elif cfg.get("load_mode") == "load":
             return cls.from_config_load(n_agents, cfg)
 
     @classmethod
     def from_config_train(cls, n_agents, cfg):
-        mlp_cfg = cfg.mlp
+        mlp_cfg = cfg.get("mlp")
         role_list = [0] * n_agents
-        role_ids = cfg.role_ids
+        role_ids = cfg.get("role_ids")
         # (0, ('defence', ['alice', 'bob'])) 和 (1, ('attack', ['carol', 'dave']))
         # 这里role_ids是字典，key是角色，value是agent_id
 

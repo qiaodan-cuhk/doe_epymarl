@@ -16,15 +16,11 @@ class DoEMAC(BasicMAC):
         # add doe classifier
         self.ent_coef = 1.0 # needed to override the ent_coef called elsewhere
 
-        self.base_temp = self.args.get("base_temp", 1.0)
-        self.boost_temp_coef = self.args.get("boost_temp", 1.0)
-
-        # """ self.ids 要修改 """
-        # """ 这里有个问题是，mac的doe训练和runner里是否重复，还是说单独训练的 """
-        # self.doe_classifier = doe_classifier_config_loader(
-        #         cfg=self.args.get("doe_classifier_cfg"),
-        #         ids=self.ids
-        #         )
+        # self.base_temp = self.args.get("base_temp", 1.0)
+        self.base_temp = getattr(self.args, "base_temp", 1.0)
+        # self.base_temp = self.args.base_temp if hasattr(self.args, "base_temp") else 1.0
+        # self.boost_temp_coef = self.args.get("boost_temp", 1.0)
+        self.boost_temp_coef = getattr(self.args, "boost_temp", 1.0)
         
 
     def is_doe(self, obs, agent_id=None):
@@ -40,7 +36,7 @@ class DoEMAC(BasicMAC):
         # 修改 forward 为 DoE gain
         obs = ep_batch["obs"][:, t_ep]
         if not test_mode:
-            agent_outputs = agent_outputs/self.boost_temp(obs, agent_id)
+            agent_outputs = agent_outputs/self.boost_temp(obs)
         else:
             agent_outputs = agent_outputs
 
@@ -115,7 +111,7 @@ class DoEMAC(BasicMAC):
     """ Used for adjust policy temperature """
     def boost_temp(self, obs, agent_id=None):
         if agent_id is None:
-            return {self.boost_temp(obs, agent_id) for agent_id in self.ids}
+            return {self.boost_temp(obs, agent_id) for agent_id in range(self.n_agents)}
         else:
             doe = self.is_doe(obs[agent_id], agent_id)
             return self.base_temp * th.pow(self.boost_temp_coef, 1-doe)

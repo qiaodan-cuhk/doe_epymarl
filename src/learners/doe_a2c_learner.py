@@ -46,17 +46,15 @@ class DoE_A2C_Learner:
         self.ent_coef = 1.0 # needed to override the ent_coef called elsewhere
         # entropy_coef = 0.01
 
-        self.base_lr = self.args.get("base_lr", 1.0)
-        self.base_ent = self.args.get("base_ent", 1.0)
+        # self.base_lr = self.args.get("base_lr", 1.0)
+        # self.base_ent = self.args.get("base_ent", 1.0)
+        # self.boost_lr_coef = self.args.get("boost_lr", 1.0)
+        # self.boost_ent_coef = self.args.get("boost_ent", 1.0)
 
-        self.boost_lr_coef = self.args.get("boost_lr", 1.0)
-        self.boost_ent_coef = self.args.get("boost_ent", 1.0)
-
-        # """ self.ids 要修改 """
-        # self.doe_classifier = doe_classifier_config_loader(
-        #         cfg=self.args.get("doe_classifier_cfg"),
-        #         ids=self.ids
-        #         )
+        self.base_lr = getattr(self.args, "base_lr", 1.0)
+        self.base_ent = getattr(self.args, "base_ent", 1.0)
+        self.boost_lr_coef = getattr(self.args, "boost_lr", 1.0)
+        self.boost_ent_coef = getattr(self.args, "boost_ent", 1.0)
 
     def train(self, batch: EpisodeBatch, t_env: int, episode_num: int):
         # Get the relevant quantities

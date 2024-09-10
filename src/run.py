@@ -18,6 +18,8 @@ from utils.general_reward_support import test_alg_config_supports_reward
 from utils.logging import Logger
 from utils.timehelper import time_left, time_str
 
+from modules.doe import doe_classifier_config_loader
+
 
 def run(_run, _config, _log):
     # check args sanity
@@ -139,6 +141,22 @@ def run_sequential(args, logger):
 
     # Learner
     learner = le_REGISTRY[args.learner](mac, buffer.scheme, logger, args)
+
+    # 检查是否需要 DoE，并 train/load classifier
+    if args.use_doe:  # 假设我们在配置中添加了一个 use_doe 标志
+        doe_classifier = doe_classifier_config_loader(
+            n_agents=args.n_agents,
+            cfg=args.doe_classifier_cfg  # 本来是args.get("doe_classifier_cfg")
+        )
+        
+        # 为 MAC 设置 DoE classifier
+        if hasattr(mac, 'set_doe_classifier'):
+            mac.set_doe_classifier(doe_classifier)
+        
+        # 为 Learner 设置 DoE classifier
+        if hasattr(learner, 'set_doe_classifier'):
+            learner.set_doe_classifier(doe_classifier)
+        print("DoE_classifier is set to mac and learner")
 
     if args.use_cuda:
         learner.cuda()
