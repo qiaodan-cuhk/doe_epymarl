@@ -181,3 +181,11 @@ Game has started.
 Using default stable ids, none found at: /home/qiaodan/StarCraftII/stableid.json
 Successfully loaded stable ids: GameData\stableid.json
 Sending ResponseJoinGame
+[INFO 01:24:52] my_main Recent Stats | t_env:     100043 | Episode:     1914
+battle_won_mean:           0.3421	dead_allies_mean:          4.1707	dead_enemies_mean:         3.3989	ep_length_mean:           54.1241
+epsilon:                   0.0500	grad_norm:                18.1261	loss:                      1.7085	q_taken_mean:              1.6379
+return_mean:              14.5229	return_std:                4.0850	target_mean:               1.6802	td_error_abs:              0.8016
+test_battle_won_mean:      0.2850	test_dead_allies_mean:     4.3450	test_dead_enemies_mean:    2.3000	test_ep_length_mean:      50.5650
+test_return_mean:          9.4532	test_return_std:           2.7311	
+[INFO 01:24:53] my_main t_env: 100096 / 2050000
+[INFO 01:24:53] my_main Estimated time left: 3 hours, 45 minutes, 31 seconds. Time passed: 11 minutes, 26 seconds
