@@ -127,7 +127,7 @@ class MLPClassifier:
         if cfg.get("load_mode") == "train":
             classifier = cls.from_config_train(n_agents, cfg, buffer_path)
             if cfg.get("save_classifier", False):
-                classifier.save(cfg.save_pathname)
+                classifier.save(cfg.get("save_pathname"))
             return classifier
         elif cfg.get("load_mode") == "load":
             return cls.from_config_load(n_agents, cfg)
@@ -156,6 +156,8 @@ class MLPClassifier:
 
         # 考虑有时候用episode data而不是transitions,getattr
         transition_data = exp_buffers.transition_data
+        obs_data = transition_data["obs"]
+        buffer_size, max_seq_length, _, obs_shape = obs_data.shape
 
         # Classifier training params
         batch_size = mlp_cfg.get("batch_size", 256)
@@ -168,26 +170,51 @@ class MLPClassifier:
         # Load & process the data
         states = []
         labels = [] 
+
         with torch.no_grad():
             for agent_id in range(n_agents):
                 #state = torch.concat(exp_buffers[agent_id])
                 # 这里要考虑是否使用全局状态，如果全局状态可见，那么所有agent都一样，没法区分，还是要用obs我觉得，但也要考虑有些环境没有obs
                 # state = exp_buffers[agent_id]
                 # 这里数据要想办法对齐一下
-                state = transition_data["obs"]
-                label = torch.full((len(exp_buffers[agent_id]),), role_list[agent_id])
-                # 长度为buffer长度的tensor，每个元素都被填充为agent_id对应的角色label[attack, defence]
+
+                # 假设 obs_data 的形状是 (n_episodes, max_seq_length, n_agents, obs_shape)
+                state = obs_data[:, :, agent_id]  # (n_episodes, max_seq_length, obs_shape)
+                state = state.reshape(-1, obs_shape)  # 展平为 (n_episodes * max_seq_length, obs_shape)
+
+                # 创建对应的 label
+                label = torch.full((state.shape[0],), role_list[agent_id])  # torch.full((n_episodes, max_seq_length), role_list[agent_id])
+                # label = label.reshape(-1)  # 展平为 (n_episodes * max_seq_length,)
                 states.append(state)
                 labels.append(label)
-            states = torch.concat(states)
-            labels = torch.concat(labels)
+
+                # state = obs_data[:, :, agent_id]  # 10 episodes, 100 timesteps, i agent, obs_shape
+                # label = torch.full((len(exp_buffers[agent_id]),), role_list[agent_id])
+                # 长度为buffer长度的tensor，每个元素都被填充为agent_id对应的角色label[attack, defence]
+            
+            # 将所有状态和标签连接成一个大的张量，比如 【(1000, 64) *4】变成 (4000, 64)
+            states = torch.cat(states, dim=0)
+            labels = torch.cat(labels, dim=0)
+            assert states.shape[0] == labels.shape[0], "States and labels must have the same number of samples"
+
             dataset = SimpleListDataset(states, labels)
-            train_size = int(test_fraction * len(dataset))
+            train_size = int((1 - test_fraction) * len(dataset))
             test_size = len(dataset) - train_size
             train_dataset, test_dataset = torch.utils.data.random_split(dataset,
                                                                         [train_size, test_size])
             train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
             test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+
+
+            # states = torch.concat(states)
+            # labels = torch.concat(labels)
+            # dataset = SimpleListDataset(states, labels)
+            # train_size = int(test_fraction * len(dataset))
+            # test_size = len(dataset) - train_size
+            # train_dataset, test_dataset = torch.utils.data.random_split(dataset,
+            #                                                             [train_size, test_size])
+            # train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+            # test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
         network_arch = [states[0].size().numel(), *hidden_sizes, 1]
 

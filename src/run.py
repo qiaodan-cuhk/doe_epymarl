@@ -145,6 +145,7 @@ def run_sequential(args, logger):
     # 创建在训练结束时存储buffer用于DoE的路径
     buffer_save_path = os.path.join(dirname(dirname(abspath(__file__))), args.local_results_path, "buffers", args.env, args.env_args.get("map_name"))
     os.makedirs(buffer_save_path, exist_ok=True)
+    
     # 用于检查doe模块，正式运行时删掉
     th.save(buffer.data, "{}/buffer.pt".format(buffer_save_path))
 
