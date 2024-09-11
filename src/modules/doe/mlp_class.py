@@ -123,9 +123,9 @@ class MLPClassifier:
 
     
     @classmethod
-    def from_config(cls, n_agents, cfg):
+    def from_config(cls, n_agents, cfg, buffer_path):
         if cfg.get("load_mode") == "train":
-            classifier = cls.from_config_train(n_agents, cfg)
+            classifier = cls.from_config_train(n_agents, cfg, buffer_path)
             if cfg.get("save_classifier", False):
                 classifier.save(cfg.save_pathname)
             return classifier
@@ -133,7 +133,7 @@ class MLPClassifier:
             return cls.from_config_load(n_agents, cfg)
 
     @classmethod
-    def from_config_train(cls, n_agents, cfg):
+    def from_config_train(cls, n_agents, cfg, buffer_path):
         mlp_cfg = cfg.get("mlp")
         role_list = [0] * n_agents
         role_ids = cfg.get("role_ids")
@@ -148,11 +148,14 @@ class MLPClassifier:
 
         # 这段是为了load buffer,需要在run.py中添加一个save buffer的接口
         # 考虑转成字典，或者直接用torch load
-        buffer_save_path = os.path.join(mlp_cfg.local_results_path, "buffers", mlp_cfg.env, mlp_cfg.env_args.map_name, "buffer.pt")
-        if not os.path.exists(buffer_save_path):
-            raise FileNotFoundError(f"Buffer file not found at {buffer_save_path}")
-        
-        exp_buffers = torch.load(buffer_save_path)
+        # 这里 mlp cfg 是doe的局部变量，无法导入args.local_path = results，写死成results
+        # buffer_save_path = os.path.join("results", "buffers", mlp_cfg.env, mlp_cfg.env_args.map_name, "buffer.pt")
+        if not os.path.exists(buffer_path):
+            raise FileNotFoundError(f"Buffer file not found at {buffer_path}")
+        exp_buffers = torch.load(os.path.join(buffer_path, "buffer.pt"))
+
+        # 考虑有时候用episode data而不是transitions,getattr
+        transition_data = exp_buffers.transition_data
 
         # Classifier training params
         batch_size = mlp_cfg.get("batch_size", 256)
@@ -168,7 +171,10 @@ class MLPClassifier:
         with torch.no_grad():
             for agent_id in range(n_agents):
                 #state = torch.concat(exp_buffers[agent_id])
-                state = exp_buffers[agent_id]
+                # 这里要考虑是否使用全局状态，如果全局状态可见，那么所有agent都一样，没法区分，还是要用obs我觉得，但也要考虑有些环境没有obs
+                # state = exp_buffers[agent_id]
+                # 这里数据要想办法对齐一下
+                state = transition_data["obs"]
                 label = torch.full((len(exp_buffers[agent_id]),), role_list[agent_id])
                 # 长度为buffer长度的tensor，每个元素都被填充为agent_id对应的角色label[attack, defence]
                 states.append(state)

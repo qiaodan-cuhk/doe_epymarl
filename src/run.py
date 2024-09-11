@@ -142,11 +142,18 @@ def run_sequential(args, logger):
     # Learner
     learner = le_REGISTRY[args.learner](mac, buffer.scheme, logger, args)
 
+    # 创建在训练结束时存储buffer用于DoE的路径
+    buffer_save_path = os.path.join(dirname(dirname(abspath(__file__))), args.local_results_path, "buffers", args.env, args.env_args.get("map_name"))
+    os.makedirs(buffer_save_path, exist_ok=True)
+    # 用于检查doe模块，正式运行时删掉
+    th.save(buffer.data, "{}/buffer.pt".format(buffer_save_path))
+
     # 检查是否需要 DoE，并 train/load classifier
     if args.use_doe:  # 假设我们在配置中添加了一个 use_doe 标志
         doe_classifier = doe_classifier_config_loader(
             n_agents=args.n_agents,
-            cfg=args.doe_classifier_cfg  # 本来是args.get("doe_classifier_cfg")
+            cfg=args.doe_classifier_cfg,  # 本来是args.get("doe_classifier_cfg")，这里args是namespace形式
+            buffer_path= buffer_save_path
         )
         
         # 为 MAC 设置 DoE classifier
@@ -277,6 +284,16 @@ def run_sequential(args, logger):
             logger.log_stat("episode", episode, runner.t_env)
             logger.print_recent_stats()
             last_log_T = runner.t_env
+    
+    """ Save buffers for DoE Classifier """
+    # 添加两个参数，save_doe_buffer 代表是否存储buffer用于doe训练；
+    # pretrain_tasks True是source task训练，不需要doe，False是target task训练，需要加载doe；
+    if args.save_doe_buffer and args.pretrain_tasks:
+        # buffer_save_path = os.path.join(args.local_results_path, "buffers", args.env, args.env_args.get("map_name"))
+        # os.makedirs(os.path.dirname(buffer_save_path), exist_ok=True)
+        th.save(buffer.data, "{}/buffer.pt".format(buffer_save_path))
+        logger.console_logger.info(f"Save buffer to {buffer_save_path} nfor DoE Classifier")
+
 
     runner.close_env()
     logger.console_logger.info("Finished Training")
