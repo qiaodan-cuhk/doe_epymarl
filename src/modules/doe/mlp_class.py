@@ -103,10 +103,12 @@ class MLPClassifier:
 
     # 返回的是obs属于当前角色的0-1概率，需要经过sigmoid函数
     def is_doe(self, obs, agent_id=None):
+        device = next(self.mlps[agent_id].parameters()).device  # 获取模型所在的设备
+        obs_tensor = torch.Tensor(obs).to(device)  # 将输入张量移动到相同的设备
         if agent_id is None:
-            return [self.mlps[i](torch.Tensor(obs[i])).sigmoid() for i in range(self.n_agents)]
+            return [self.mlps[i](torch.Tensor(obs_tensor[i])).sigmoid() for i in range(self.n_agents)]
         else:
-            return self.mlps[agent_id](torch.Tensor(obs)).sigmoid()
+            return self.mlps[agent_id](torch.Tensor(obs_tensor)).sigmoid()
 
     # 返回的是mlp输出值，不需要经过sigmoid函数
     def is_doe_logits(self, obs, agent_id=None):

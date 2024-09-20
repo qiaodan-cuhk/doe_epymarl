@@ -105,8 +105,8 @@ class DoE_A2C_Learner:
 
         """ Boost pi_taken and entropy with DoE gains """
         # 原始代码中agent_id为None，等于为所有agent都分别计算他的boost，存成一个list，用于分别更新每个agent的loss
-        b_log_pi_taken = log_pi_taken * self.boost_lr(agent_obs, agent_id=None)
-        b_entropy = entropy * self.boost_ent(agent_obs, agent_id=None)
+        b_log_pi_taken = log_pi_taken * self.boost_lr(agent_obs, agent_id=None).to(log_pi_taken.device)
+        b_entropy = entropy * self.boost_ent(agent_obs, agent_id=None).to(entropy.device)
 
         # PG loss for actor
         pg_loss = -((advantages * b_log_pi_taken + self.args.entropy_coef * b_entropy) * mask).sum() / mask.sum()
@@ -136,7 +136,7 @@ class DoE_A2C_Learner:
             self.log_stats_t = t_env
 
             """ Add DoE logger """
-            self.logger.log_stat("DoE", b_log_pi_taken.item()/log_pi_taken.item(), t_env)
+            self.logger.log_stat("DoE", self.boost_lr(agent_obs, agent_id=None)[0,0,:], t_env)
 
     def train_critic_sequential(self, critic, target_critic, batch, rewards, mask):
         # Optimise critic
@@ -234,17 +234,21 @@ class DoE_A2C_Learner:
 
     def boost_lr(self, obs, agent_id=None):
         if agent_id is None:
-            return {self.boost_lr(obs, agent_id) for agent_id in range(self.n_agents)}
+            labels = th.stack([self.boost_lr(obs, agent_id) for agent_id in range(self.n_agents)])
+            lr_labels = labels.permute(1,2,0,3)
+            return lr_labels.squeeze(-1)
         else:
             boost = self.boost_lr_coef
-            return self.base_lr*(boost + (1-boost)*self.is_doe(obs[agent_id], agent_id))
+            return self.base_lr*(boost + (1-boost)*self.is_doe(obs[:,:,agent_id,:], agent_id))
 
     def boost_ent(self, obs, agent_id=None):
         if agent_id is None:
-            return {self.boost_ent(obs, agent_id) for agent_id in range(self.n_agents)}
+            labels = th.stack([self.boost_ent(obs, agent_id) for agent_id in range(self.n_agents)])
+            ent_labels = labels.permute(1,2,0,3)
+            return ent_labels.squeeze(-1)
         else:
             boost = self.boost_ent_coef
-            return self.base_ent*(boost + (1-boost)*self.is_doe(obs[agent_id], agent_id))
+            return self.base_ent*(boost + (1-boost)*self.is_doe(obs[:,:,agent_id,:], agent_id))
         
     # Add DoE Classifier
     def set_doe_classifier(self, classifier):

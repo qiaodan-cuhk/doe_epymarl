@@ -36,7 +36,7 @@ class DoEMAC(BasicMAC):
         # 修改 forward 为 DoE gain
         obs = ep_batch["obs"][:, t_ep]
         if not test_mode:
-            agent_outputs = agent_outputs/self.boost_temp(obs)
+            agent_outputs = agent_outputs/self.boost_temp(obs).to(agent_outputs.device)
         else:
             agent_outputs = agent_outputs
 
@@ -111,9 +111,11 @@ class DoEMAC(BasicMAC):
     """ Used for adjust policy temperature """
     def boost_temp(self, obs, agent_id=None):
         if agent_id is None:
-            return {self.boost_temp(obs, agent_id) for agent_id in range(self.n_agents)}
+            labels = th.stack([self.boost_temp(obs, agent_id) for agent_id in range(self.n_agents)])
+            labels_align = labels.permute(1,0,2)
+            return labels_align
         else:
-            doe = self.is_doe(obs[agent_id], agent_id)
+            doe = self.is_doe(obs[:, agent_id, :], agent_id)
             return self.base_temp * th.pow(self.boost_temp_coef, 1-doe)
     
     # Add DoE Classifier
