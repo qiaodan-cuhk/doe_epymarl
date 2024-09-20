@@ -136,7 +136,7 @@ class DoE_A2C_Learner:
             self.log_stats_t = t_env
 
             """ Add DoE logger """
-            self.logger.log_stat("DoE", str(self.boost_lr(agent_obs, agent_id=None)[0,0,:]), t_env)
+            # self.logger.log_stat("DoE", str(self.boost_lr(agent_obs, agent_id=None)[0,0,:]), t_env)
 
     def train_critic_sequential(self, critic, target_critic, batch, rewards, mask):
         # Optimise critic
